@@ -16,7 +16,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
   // check if user already available
 
-  const existedser = User.findOne({ $or: [{ userName }, { email }] });
+  const existedser = await User.findOne({ $or: [{ userName }, { email }] });
   if (existedser) {
     throw new ApiError(409, "User with email or userName already exists.");
   }
@@ -28,32 +28,45 @@ const registerUser = asyncHandler(async (req, res, next) => {
   // check kro k zror avatar hona chahiyee
   if (!avatarLocalPath) {
     throw new ApiError(409, "Avatar Image compulsory.");
-
-    // upload on cloudinary
-    const avatarResult = await uploadOnCloudinary(avatarLocalPath);
-    const coverImageResult = await uploadOnCloudinary(coverImageLocalPath);
-
-    // check kro sai sy avatar upload howa hai yah nahi
-    if (!avatarResult) {
-      throw new ApiError(409, "Avatar Image compulsory.");
-    }
-
-    // DB Entry
-    const user = User.create({
-      userName,
-      avatar: avatarResult.url,
-      coverImage: coverImage?.url || "",
-      userName: userName.toLowerCase(),
-    });
   }
 
+  if (!coverImageLocalPath) {
+    throw new ApiError(409, "Cover Image compulsory.");
+  }
+
+  // upload on cloudinary
+  const avatarResult = await uploadOnCloudinary(avatarLocalPath);
+  const coverImageResult = await uploadOnCloudinary(coverImageLocalPath);
+
+  // check kro sai sy avatar upload howa hai yah nahi
+  if (!avatarResult) {
+    throw new ApiError(409, "Avatar Image compulsory.");
+  }
+
+  if (!coverImageResult) {
+    throw new ApiError(409, "Cover Image compulsory.");
+  }
+
+  // DB Entry
+  const user = await User.create({
+    fullName,
+    email,
+    password,
+    avatar: avatarResult.url,
+    coverImage: coverImageResult.url,
+    userName: userName.toLowerCase(),
+  });
+
   // Remove password and refreshToken from response object
-  const createdUser = User.findById(user._id).select("-password -refreshToken");
+  const createdUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
   if (!createdUser) {
     throw new ApiError(500, "Error in user creation.");
   }
 
-  return res.status(201).json(new ApiResponse(200, createdUser, message: "User Registered Successfully."));
-
+  return res
+    .status(201)
+    .json(new ApiResponse(200, createdUser, "User Registered Successfully."));
 });
 export { registerUser };

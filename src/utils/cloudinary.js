@@ -7,17 +7,21 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const uploadOnCloudinary = async (localFilePath) => {
+const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
-    const uploadResult = await cloudinary.uploader.upload(localFilePath, {
-      public_id: "shoes",
+    //upload the file on cloudinary
+    const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
-    console.log("File Upload", uploadResult.url);
-    return uploadResult;
-  } catch (error) {
+    // file has been uploaded successfull
+    //console.log("file is uploaded on cloudinary ", response.url);
     fs.unlinkSync(localFilePath);
+    return response;
+  } catch (error) {
+    fs.unlinkSync(localFilePath); // remove the locally saved temporary file as the upload operation got failed
     return null;
   }
 };
+
+export { uploadOnCloudinary };
